@@ -1,0 +1,59 @@
+package com.example.demo.controoler;
+
+import lombok.Data;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import javax.validation.ConstraintViolationException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@ControllerAdvice
+public class ErrorHan {
+
+    @ExceptionHandler
+    public ResponseEntity<Erroneous> handleException(ConstraintViolationException e) {
+
+        return new ResponseEntity(Optional.of(Erroneous.of(e.getMessage())), HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<Erroneous>  handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return new ResponseEntity(Optional.of(Erroneous.of(errors.values().stream().findFirst().get())), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<?> handle(Throwable e) {
+        return new ResponseEntity(Optional.of(Erroneous.of(e.getMessage())), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Data
+    public static class Erroneous {
+        private String message;
+        private LocalDateTime date = LocalDateTime.now();
+
+        public Erroneous(String message) {
+            this.message = message;
+        }
+
+        public static Erroneous of(String message) {
+            return new Erroneous(message);
+        }
+
+    }
+
+}
+
